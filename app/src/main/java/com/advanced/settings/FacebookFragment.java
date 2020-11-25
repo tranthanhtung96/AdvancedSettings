@@ -7,6 +7,8 @@ import androidx.fragment.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.content.pm.PackageManager;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -23,6 +25,8 @@ public class FacebookFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+
+    Button btEnable, btDisable;
 
     public FacebookFragment() {
         // Required empty public constructor
@@ -59,6 +63,65 @@ public class FacebookFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_facebook, container, false);
+        ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_facebook, null);
+
+        PackageManager pm = getContext().getPackageManager();
+
+        btDisable = root.findViewById(R.id.bt_disable);
+        btEnable = root.findViewById(R.id.bt_enable);
+
+        if (pm.getApplicationEnabledSetting("com.facebook.orca") < pm.COMPONENT_ENABLED_STATE_DISABLED) {
+            allowClickButtonDisable();
+        } else {
+            allowClickButtonEnable();
+        }
+
+        btDisable.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Process proc;
+                    proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "pm disable-user --user 0 com.facebook.orca" });
+                    proc.waitFor();
+                    proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "pm disable-user --user 0 com.facebook.katana" });
+                    proc.waitFor();
+                    allowClickButtonEnable();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        btEnable.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Process proc;
+                    proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "pm enable com.facebook.orca" });
+                    proc.waitFor();
+                    proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "pm enable com.facebook.katana" });
+                    proc.waitFor();
+                    allowClickButtonDisable();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        return root;
+    }
+
+    private void allowClickButtonDisable() {
+        btEnable.setEnabled(false);
+        btDisable.setEnabled(true);
+    }
+
+    private void allowClickButtonEnable() {
+        btEnable.setEnabled(true);
+        btDisable.setEnabled(false);
     }
 }

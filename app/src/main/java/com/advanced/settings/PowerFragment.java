@@ -4,9 +4,11 @@ import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -59,6 +61,50 @@ public class PowerFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_power, container, false);
+        ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_power, null);
+
+        Button btShutdown = root.findViewById(R.id.bt_shutdown);
+        btShutdown.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Process proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "reboot -p" });
+                    proc.waitFor();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        Button btReboot2OS = root.findViewById(R.id.bt_reboot2OS);
+        btReboot2OS.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Process proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "reboot" });
+                    proc.waitFor();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        Button btReboot2Recovery = root.findViewById(R.id.bt_reboot2Recovery);
+        btReboot2Recovery.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    Process proc = Runtime.getRuntime()
+                            .exec(new String[]{ "su", "-c", "reboot recovery" });
+                    proc.waitFor();
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        return root;
     }
 }

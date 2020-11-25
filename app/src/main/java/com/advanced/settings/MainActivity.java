@@ -18,7 +18,6 @@ public class MainActivity extends AppCompatActivity {
         TabLayout tabLayout = findViewById(R.id.tl_tabBar);
         TabItem tabPower = findViewById(R.id.ti_tabPower);
         TabItem tabFacebook = findViewById(R.id.ti_tabFacebook);
-        TabItem tabUSB = findViewById(R.id.ti_tabUSB);
         ViewPager viewPager = findViewById(R.id.vp_tabContent);
 
         PagerAdapter pagerAdapter = new PagerAdapter(
@@ -43,5 +42,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
     }
 }

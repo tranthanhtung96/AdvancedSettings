@@ -21,8 +21,6 @@ public class PagerAdapter extends FragmentPagerAdapter {
                 return new PowerFragment();
             case 1:
                 return new FacebookFragment();
-            case 2:
-                return new USBFragment();
             default:
                 return null;
         }
