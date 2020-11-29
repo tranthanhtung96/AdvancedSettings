@@ -1,14 +1,17 @@
 package com.advanced.settings;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.content.pm.PackageManager;
+import android.widget.Switch;
+
+import androidx.fragment.app.Fragment;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -26,7 +29,11 @@ public class FacebookFragment extends Fragment {
     private String mParam1;
     private String mParam2;
 
-    Button btEnable, btDisable;
+    private boolean facebookEnabledStatus, messengerEnabledStatus;
+    private Switch facebookSwitch, messengerSwitch;
+    private MyApplication myApp;
+    private BroadcastReceiver facebookBroadcastReceiver, messengerBroadcastReceiver;
+    private static boolean running = false;
 
     public FacebookFragment() {
         // Required empty public constructor
@@ -65,63 +72,83 @@ public class FacebookFragment extends Fragment {
         // Inflate the layout for this fragment
         ViewGroup root = (ViewGroup) inflater.inflate(R.layout.fragment_facebook, null);
 
-        PackageManager pm = getContext().getPackageManager();
+        myApp = (MyApplication) getActivity().getApplication();
 
-        btDisable = root.findViewById(R.id.bt_disable);
-        btEnable = root.findViewById(R.id.bt_enable);
+        facebookSwitch = root.findViewById(R.id.sw_facebook);
+        messengerSwitch = root.findViewById(R.id.sw_messenger);
 
-        if (pm.getApplicationEnabledSetting("com.facebook.orca") < pm.COMPONENT_ENABLED_STATE_DISABLED) {
-            allowClickButtonDisable();
-        } else {
-            allowClickButtonEnable();
-        }
+        updateFacebookSwitch();
+        updateMessengerSwitch();
 
-        btDisable.setOnClickListener(new View.OnClickListener() {
+        facebookSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    Process proc;
-                    proc = Runtime.getRuntime()
-                            .exec(new String[]{ "su", "-c", "pm disable-user --user 0 com.facebook.orca" });
-                    proc.waitFor();
-                    proc = Runtime.getRuntime()
-                            .exec(new String[]{ "su", "-c", "pm disable-user --user 0 com.facebook.katana" });
-                    proc.waitFor();
-                    allowClickButtonEnable();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                if (facebookEnabledStatus) {
+                    myApp.disablePackage(MyApplication.FACEBOOK_PACKAGE_NAME);
+                } else {
+                    myApp.enablePackage(MyApplication.FACEBOOK_PACKAGE_NAME);
                 }
+                updateFacebookSwitch();
             }
         });
 
-        btEnable.setOnClickListener(new View.OnClickListener() {
+        messengerSwitch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                try {
-                    Process proc;
-                    proc = Runtime.getRuntime()
-                            .exec(new String[]{ "su", "-c", "pm enable com.facebook.orca" });
-                    proc.waitFor();
-                    proc = Runtime.getRuntime()
-                            .exec(new String[]{ "su", "-c", "pm enable com.facebook.katana" });
-                    proc.waitFor();
-                    allowClickButtonDisable();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                if (messengerEnabledStatus) {
+                    myApp.disablePackage(MyApplication.MESSENGER_PACKAGE_NAME);
+                } else {
+                    myApp.enablePackage(MyApplication.MESSENGER_PACKAGE_NAME);
                 }
+                updateMessengerSwitch();
             }
         });
+
+        facebookBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                updateFacebookSwitch();
+            }
+        };
+        messengerBroadcastReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                updateMessengerSwitch();
+            }
+        };
+        LocalBroadcastManager.getInstance(getContext()).registerReceiver(facebookBroadcastReceiver,
+                new IntentFilter(FacebookTileService.UPDATE_FACEBOOK_ENABLED_STATUS_ACTION));
+        LocalBroadcastManager.getInstance(getContext()).registerReceiver(messengerBroadcastReceiver,
+                new IntentFilter(MessengerTileService.UPDATE_MESSENGER_ENABLED_STATUS_ACTION));
 
         return root;
     }
 
-    private void allowClickButtonDisable() {
-        btEnable.setEnabled(false);
-        btDisable.setEnabled(true);
+    @Override
+    public void onStart() {
+        super.onStart();
+        running = true;
     }
 
-    private void allowClickButtonEnable() {
-        btEnable.setEnabled(true);
-        btDisable.setEnabled(false);
+    @Override
+    public void onStop() {
+        super.onStop();
+        running = false;
+        LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(facebookBroadcastReceiver);
+        LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(messengerBroadcastReceiver);
+    }
+
+    private void updateFacebookSwitch() {
+        facebookEnabledStatus = myApp.getPackageEnabledStatus(MyApplication.FACEBOOK_PACKAGE_NAME);
+        facebookSwitch.setChecked(facebookEnabledStatus);
+    }
+
+    private void updateMessengerSwitch() {
+        messengerEnabledStatus = myApp.getPackageEnabledStatus(MyApplication.MESSENGER_PACKAGE_NAME);
+        messengerSwitch.setChecked(messengerEnabledStatus);
+    }
+
+    public static boolean isRunning() {
+        return running;
     }
 }
